@@ -136,7 +136,6 @@ export default function App() {
     const targetItem = items.find(i => i.id === itemId);
     if (!targetItem) return;
 
-    // Record usage log entry with current user name
     const newLog = {
       id: `log_${Date.now()}`,
       item_id: itemId,
@@ -155,7 +154,6 @@ export default function App() {
           let remainingToDeduct = amount;
           let updatedBatches = (item.batches || []).map(b => ({ ...b }));
 
-          // Sort batches so earliest expiring (non-empty) batch is deducted first (FIFO)
           updatedBatches.sort((a, b) => {
             if (!a.expiration_date) return 1;
             if (!b.expiration_date) return -1;
@@ -381,7 +379,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* Navbar Header with Role Switcher */}
+      {/* Navbar Header with Role Switcher & Smart Auto-Hide */}
       <Header 
         currentUser={currentUser}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
@@ -449,11 +447,11 @@ export default function App() {
         {/* ADMIN ONLY: Financial & Inventory Metrics Bar */}
         {isAdmin && <InventoryMetricsBar items={items} enrolledChildrenCount={12} />}
 
-        {/* Filter Bar 1: Search & Room Filters */}
-        <div className="controls-bar" style={{ marginBottom: '1rem' }}>
+        {/* Controls Bar: Search, Quick Filters & Sort */}
+        <div className="controls-bar">
           {/* Search Box */}
           <div className="search-input-wrapper">
-            <Search className="search-icon" size={18} />
+            <Search className="search-icon" size={17} />
             <input 
               type="text"
               placeholder="Search name, category, or barcode..."
@@ -462,13 +460,51 @@ export default function App() {
             />
           </div>
 
-          {/* Age Group Filter Pills */}
-          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginRight: '0.2rem' }}>
-              Age Room:
-            </span>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Expiration Watch Filter Button */}
+            <button 
+              className={`btn ${showOnlyExpiring ? 'btn-danger-subtle' : 'btn-secondary'}`}
+              style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem' }}
+              onClick={() => {
+                setShowOnlyExpiring(prev => !prev);
+                setShowOnlyLowStock(false);
+              }}
+            >
+              <Clock size={15} color={showOnlyExpiring ? 'var(--accent-red)' : 'var(--accent-amber)'} />
+              <span>Expiring</span>
+              {(expiringItems.length > 0 || expiredItems.length > 0) && (
+                <span className="alert-count-chip" style={{ background: expiredItems.length > 0 ? 'var(--accent-red)' : 'var(--accent-amber)' }}>
+                  {expiredItems.length + expiringItems.length}
+                </span>
+              )}
+            </button>
+
+            {/* Sort Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <ArrowUpDown size={14} color="var(--text-muted)" />
+              <select 
+                className="form-control"
+                style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem', width: 'auto' }}
+                value={sortOrder}
+                onChange={e => setSortOrder(e.target.value)}
+              >
+                <option value="DEFAULT">Sort: Default</option>
+                <option value="RUNOUT_SOONEST">⚡ Runs Out Soonest</option>
+                <option value="EXPIRING_SOONEST">📅 Earliest Expiry</option>
+                <option value="QTY_LOWEST">📦 Lowest Qty</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Bar 1: Age Room Horizontal Scrollable Row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px', flexShrink: 0 }}>
+            Room:
+          </span>
+          <div className="scrollable-pill-row" style={{ flex: 1 }}>
             {[
-              { id: 'ALL', label: '🌟 All' },
+              { id: 'ALL', label: '🌟 All Ages' },
               { id: 'INFANT', label: '🍼 Infant' },
               { id: 'TODDLER', label: '🧸 Toddler' },
               { id: 'PRESCHOOL', label: '🎨 Preschool' }
@@ -476,102 +512,69 @@ export default function App() {
               <button
                 key={grp.id}
                 className={`btn ${selectedAgeGroup === grp.id ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ padding: '0.35rem 0.7rem', fontSize: '0.8rem' }}
+                style={{ padding: '0.32rem 0.65rem', fontSize: '0.78rem' }}
                 onClick={() => setSelectedAgeGroup(grp.id)}
               >
                 {grp.label}
               </button>
             ))}
           </div>
-
-          {/* Special Quick Filters: Expiration Watch Button */}
-          <button 
-            className={`btn ${showOnlyExpiring ? 'btn-danger-subtle' : 'btn-secondary'}`}
-            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-            onClick={() => {
-              setShowOnlyExpiring(prev => !prev);
-              setShowOnlyLowStock(false);
-            }}
-          >
-            <Clock size={16} color={showOnlyExpiring ? 'var(--accent-red)' : 'var(--accent-amber)'} />
-            <span>Expiring / Expired</span>
-            {(expiringItems.length > 0 || expiredItems.length > 0) && (
-              <span className="alert-count-chip" style={{ background: expiredItems.length > 0 ? 'var(--accent-red)' : 'var(--accent-amber)' }}>
-                {expiredItems.length + expiringItems.length}
-              </span>
-            )}
-          </button>
-
-          {/* Sort Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <ArrowUpDown size={14} color="var(--text-muted)" />
-            <select 
-              className="form-control"
-              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', width: 'auto' }}
-              value={sortOrder}
-              onChange={e => setSortOrder(e.target.value)}
-            >
-              <option value="DEFAULT">Sort: Default</option>
-              <option value="RUNOUT_SOONEST">⚡ Sort: Running Out Soonest</option>
-              <option value="EXPIRING_SOONEST">📅 Sort: Earliest Expiry (FIFO)</option>
-              <option value="QTY_LOWEST">📦 Sort: Lowest Quantity</option>
-            </select>
-          </div>
         </div>
 
-        {/* Filter Bar 2: Categories Pills */}
-        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginRight: '0.2rem' }}>
+        {/* Filter Bar 2: Category Horizontal Scrollable Row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.3px', flexShrink: 0 }}>
             Category:
           </span>
-          <button
-            className={`btn ${selectedCategory === 'All' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-            onClick={() => setSelectedCategory('All')}
-          >
-            All Categories
-          </button>
-          {categories.map(cat => (
+          <div className="scrollable-pill-row" style={{ flex: 1 }}>
             <button
-              key={cat.id || cat.name}
-              className={`btn ${selectedCategory === cat.name ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
-              onClick={() => setSelectedCategory(cat.name)}
+              className={`btn ${selectedCategory === 'All' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{ padding: '0.32rem 0.65rem', fontSize: '0.78rem' }}
+              onClick={() => setSelectedCategory('All')}
             >
-              {cat.icon} {cat.name}
+              All
             </button>
-          ))}
-          
-          {/* Admin category management shortcut */}
-          {isAdmin && (
-            <button 
-              className="btn btn-secondary"
-              style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', color: 'var(--accent-primary)' }}
-              onClick={() => setIsCategoryManagerOpen(true)}
-              title="Manage Categories"
-            >
-              <span>Manage</span>
-            </button>
-          )}
+            {categories.map(cat => (
+              <button
+                key={cat.id || cat.name}
+                className={`btn ${selectedCategory === cat.name ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ padding: '0.32rem 0.65rem', fontSize: '0.78rem' }}
+                onClick={() => setSelectedCategory(cat.name)}
+              >
+                {cat.icon} {cat.name}
+              </button>
+            ))}
 
-          <button 
-            className="btn btn-secondary" 
-            style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: 'auto' }}
-            onClick={handleResetData}
-            title="Reset dataset"
-          >
-            <RefreshCw size={14} />
-            <span>Reset Demo</span>
-          </button>
+            {isAdmin && (
+              <button 
+                className="btn btn-secondary"
+                style={{ padding: '0.32rem 0.6rem', fontSize: '0.75rem', color: 'var(--accent-primary)' }}
+                onClick={() => setIsCategoryManagerOpen(true)}
+                title="Manage Categories"
+              >
+                + Manage
+              </button>
+            )}
+
+            <button 
+              className="btn btn-secondary" 
+              style={{ padding: '0.32rem 0.6rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}
+              onClick={handleResetData}
+              title="Reset dataset"
+            >
+              <RefreshCw size={12} />
+              <span>Reset</span>
+            </button>
+          </div>
         </div>
 
         {/* Items Grid */}
         {filteredItems.length === 0 ? (
-          <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', margin: '2rem 0' }}>
-            <Layers size={48} color="var(--text-muted)" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-            <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>No Supply Items Match Your Filters</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
-              {showOnlyExpiring ? 'Great news! No supplies are currently expiring or expired.' : showOnlyLowStock ? 'Great news! No items are below par level.' : 'Try adjusting your search query or filter.'}
+          <div className="glass-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', margin: '1.5rem 0' }}>
+            <Layers size={42} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Supply Items Found</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+              {showOnlyExpiring ? 'No supplies are currently expiring or expired.' : showOnlyLowStock ? 'No items are below par level.' : 'Try adjusting your search query or room filter.'}
             </p>
             <button className="btn btn-primary" onClick={() => setIsAddItemOpen(true)}>
               Add Supply Item

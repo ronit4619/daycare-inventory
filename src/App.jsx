@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Search, RefreshCw, AlertTriangle, Layers, CheckCircle, Clock, ShieldAlert, ArrowUpDown, Camera, TrendingUp, UserCheck } from 'lucide-react';
 import { initialItems, initialCategories, initialOrganization, initialUsageLogs, initialUsers, getItemSummary, calculateBurnRate } from './data/mockInitialData';
@@ -16,6 +16,8 @@ import AnalyticsModal from './components/AnalyticsModal';
 import AuthModal from './components/AuthModal';
 
 export default function App() {
+  const controlsSectionRef = useRef(null);
+
   // Users & Auth State
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('kiddystock_users');
@@ -103,6 +105,15 @@ export default function App() {
   const showToast = (message, type = 'info') => {
     setToastMessage({ message, type });
     setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Smooth scroll down to controls/items section
+  const scrollToItemsSection = () => {
+    setTimeout(() => {
+      if (controlsSectionRef.current) {
+        controlsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 60);
   };
 
   // Expiration & Low Stock Calculators
@@ -396,7 +407,13 @@ export default function App() {
         toggleTheme={toggleTheme}
         showOnlyLowStock={showOnlyLowStock}
         toggleLowStockFilter={() => {
-          setShowOnlyLowStock(prev => !prev);
+          setShowOnlyLowStock(prev => {
+            const next = !prev;
+            if (next) {
+              scrollToItemsSection();
+            }
+            return next;
+          });
           setShowOnlyExpiring(false);
         }}
       />
@@ -437,10 +454,12 @@ export default function App() {
           onFilterLowStock={() => {
             setShowOnlyLowStock(true);
             setShowOnlyExpiring(false);
+            scrollToItemsSection();
           }}
           onFilterExpiring={() => {
             setShowOnlyExpiring(true);
             setShowOnlyLowStock(false);
+            scrollToItemsSection();
           }}
         />
 
@@ -448,7 +467,7 @@ export default function App() {
         {isAdmin && <InventoryMetricsBar items={items} enrolledChildrenCount={12} />}
 
         {/* Controls Bar: Search, Quick Filters & Sort */}
-        <div className="controls-bar">
+        <div className="controls-bar" ref={controlsSectionRef}>
           {/* Search Box */}
           <div className="search-input-wrapper">
             <Search className="search-icon" size={17} />
@@ -466,7 +485,13 @@ export default function App() {
               className={`btn ${showOnlyExpiring ? 'btn-danger-subtle' : 'btn-secondary'}`}
               style={{ padding: '0.45rem 0.75rem', fontSize: '0.8rem' }}
               onClick={() => {
-                setShowOnlyExpiring(prev => !prev);
+                setShowOnlyExpiring(prev => {
+                  const next = !prev;
+                  if (next) {
+                    scrollToItemsSection();
+                  }
+                  return next;
+                });
                 setShowOnlyLowStock(false);
               }}
             >

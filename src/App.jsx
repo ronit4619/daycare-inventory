@@ -16,7 +16,7 @@ import AnalyticsModal from './components/AnalyticsModal';
 import AuthModal from './components/AuthModal';
 
 export default function App() {
-  const controlsSectionRef = useRef(null);
+  const itemsSectionRef = useRef(null);
 
   // Users & Auth State
   const [users, setUsers] = useState(() => {
@@ -107,11 +107,11 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Smooth scroll down to controls/items section
+  // Smooth scroll directly down to the actual inventory items grid
   const scrollToItemsSection = () => {
     setTimeout(() => {
-      if (controlsSectionRef.current) {
-        controlsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (itemsSectionRef.current) {
+        itemsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 60);
   };
@@ -467,7 +467,7 @@ export default function App() {
         {isAdmin && <InventoryMetricsBar items={items} enrolledChildrenCount={12} />}
 
         {/* Controls Bar: Search, Quick Filters & Sort */}
-        <div className="controls-bar" ref={controlsSectionRef}>
+        <div className="controls-bar">
           {/* Search Box */}
           <div className="search-input-wrapper">
             <Search className="search-icon" size={17} />
@@ -593,34 +593,36 @@ export default function App() {
           </div>
         </div>
 
-        {/* Items Grid */}
-        {filteredItems.length === 0 ? (
-          <div className="glass-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', margin: '1.5rem 0' }}>
-            <Layers size={42} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Supply Items Found</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-              {showOnlyExpiring ? 'No supplies are currently expiring or expired.' : showOnlyLowStock ? 'No items are below par level.' : 'Try adjusting your search query or room filter.'}
-            </p>
-            <button className="btn btn-primary" onClick={() => setIsAddItemOpen(true)}>
-              Add Supply Item
-            </button>
-          </div>
-        ) : (
-          <div className="items-grid">
-            {filteredItems.map(item => (
-              <ItemCard 
-                key={item.id}
-                item={item}
-                currentUser={currentUser}
-                usageLogs={usageLogs}
-                onLogUsage={handleLogUsage}
-                onOpenRestockModal={handleOpenRestockModal}
-                onEdit={() => handleOpenEdit(item)}
-                onDelete={handleDeleteItem}
-              />
-            ))}
-          </div>
-        )}
+        {/* Items Section (Direct Scroll Target) */}
+        <div ref={itemsSectionRef} style={{ scrollMarginTop: '75px' }}>
+          {filteredItems.length === 0 ? (
+            <div className="glass-card" style={{ padding: '2.5rem 1.5rem', textAlign: 'center', margin: '1.5rem 0' }}>
+              <Layers size={42} color="var(--text-muted)" style={{ margin: '0 auto 0.75rem', opacity: 0.5 }} />
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Supply Items Found</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                {showOnlyExpiring ? 'No supplies are currently expiring or expired.' : showOnlyLowStock ? 'No items are below par level.' : 'Try adjusting your search query or room filter.'}
+              </p>
+              <button className="btn btn-primary" onClick={() => setIsAddItemOpen(true)}>
+                Add Supply Item
+              </button>
+            </div>
+          ) : (
+            <div className="items-grid">
+              {filteredItems.map(item => (
+                <ItemCard 
+                  key={item.id}
+                  item={item}
+                  currentUser={currentUser}
+                  usageLogs={usageLogs}
+                  onLogUsage={handleLogUsage}
+                  onOpenRestockModal={handleOpenRestockModal}
+                  onEdit={() => handleOpenEdit(item)}
+                  onDelete={handleDeleteItem}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Modals */}
